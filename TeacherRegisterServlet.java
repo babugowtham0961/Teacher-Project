@@ -28,7 +28,7 @@ public class TeacherRegisterServlet extends HttpServlet {
 
             // Connect DB
             Connection con = DriverManager.getConnection(
-                    "jdbc:mysql://localhost:3306/school", "root", "password");
+                    "jdbc:mysql://localhost:3306/school", "root", "root");
 
             // Insert Query
             PreparedStatement ps = con.prepareStatement(
