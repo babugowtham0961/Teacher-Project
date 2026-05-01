@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Daily Attendance</title>
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<style>
+body {
+    margin: 0;
+    font-family: Arial;
+    background-size: cover;
+    background-position: center;
+    transition: background 1s ease-in-out;
+}
+
+.overlay {
+    background: rgba(0,0,0,0.6);
+    min-height: 100vh;
+    padding: 15px;
+}
+
+.container {
+    background: rgba(255,255,255,0.95);
+    padding: 15px;
+    border-radius: 10px;
+    max-width: 1000px;
+    margin: auto;
+}
+
+h1 {
+    text-align: center;
+    font-size: 22px;
+}
+
+input {
+    padding: 8px;
+    width: 100%;
+    margin-bottom: 10px;
+    border-radius: 5px;
+}
+
+.table-wrapper {
+    overflow-x: auto;
+}
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+    min-width: 500px;
+}
+
+th {
+    background: #222;
+    color: white;
+}
+
+th, td {
+    padding: 8px;
+    text-align: center;
+    border-bottom: 1px solid #ddd;
+    font-size: 14px;
+}
+
+.status-btn {
+    padding: 5px 8px;
+    border: none;
+    margin: 2px;
+    border-radius: 5px;
+    cursor: pointer;
+    color: white;
+    font-size: 12px;
+}
+
+.present { background: green; }
+.absent { background: red; }
+.late { background: blue; }
+
+.disabled {
+    opacity: 0.4;
+    pointer-events: none;
+}
+
+.active {
+    box-shadow: 0 0 5px black;
+}
+</style>
+</head>
+
+<body>
+
+<div class="overlay">
+    <div class="container">
+        <h1>Daily Attendance</h1>
+
+        <!-- 🔥 Enter class number manually -->
+        <input type="number" id="classInput" placeholder="Enter Class Number"
+               oninput="fetchClass()">
+
+        <div class="table-wrapper">
+            <table>
+                <thead>
+                    <tr>
+                        <th>#</th>
+                        <th>Name</th>
+                        <th>Class</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody id="studentTable"></tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<script>
+
+// Background images
+const backgrounds = [
+    "https://images.unsplash.com/photo-1503676260728-1c00da094a0b",
+    "https://images.unsplash.com/photo-1497633762265-9d179a990aa6",
+    "https://images.unsplash.com/photo-1519389950473-47ba0277781c",
+    "https://images.unsplash.com/photo-1523050854058-8df90110c9f1"
+];
+
+function setRandomBackground() {
+    const bg = backgrounds[Math.floor(Math.random() * backgrounds.length)];
+    document.body.style.backgroundImage = `url(${bg})`;
+}
+setRandomBackground();
+
+// Student master list (dummy data now)
+const names = ["Arjun","Rahul","Sneha","Priya","Kiran","Anjali",
+               "Ravi","Meena","Vijay","Pooja","Suresh","Divya"];
+
+let students = [];
+
+// ❌ REMOVE all auto-generated classes
+// Now we add only dummy students (without classes)
+for (let i = 1; i <= 100; i++) {
+    students.push({
+        id: i,
+        name: names[Math.floor(Math.random()*names.length)] + " " + i,
+        class: Math.floor(Math.random()*10) + 1,  // Random class
+        status: null
+    });
+}
+
+// ⭐ Fetch students by class no
+function fetchClass() {
+    const classNo = document.getElementById("classInput").value;
+
+    if (classNo === "") {
+        renderTable([]);
+        return;
+    }
+
+    fetch("GetStudentsServlet?class=" + classNo)
+        .then(res => res.json())
+        .then(data => {
+            students = data;
+            renderTable(students);
+        });
+}
+
+// Status update function
+function setStatus(studentId, status, row) {
+
+    fetch("SaveAttendanceServlet", {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/x-www-form-urlencoded"
+        },
+        body: `studentId=${studentId}&status=${status}`
+    });
+
+    const buttons = row.querySelectorAll(".status-btn");
+
+    buttons.forEach(btn => {
+        btn.classList.add("disabled");
+        btn.classList.remove("active");
+    });
+
+    const selectedBtn = row.querySelector("." + status);
+    selectedBtn.classList.remove("disabled");
+    selectedBtn.classList.add("active");
+}
+
+// Render table
+function renderTable(data) {
+    const table = document.getElementById("studentTable");
+    table.innerHTML = "";
+
+    data.forEach((student, index) => {
+        const row = document.createElement("tr");
+
+        row.innerHTML = `
+            <td>${index+1}</td>
+            <td>${student.name}</td>
+            <td>${student.class}</td>
+            <td>
+                <button class="status-btn present">P</button>
+                <button class="status-btn absent">A</button>
+                <button class="status-btn late">L</button>
+            </td>
+        `;
+
+        const btns = row.querySelectorAll(".status-btn");
+
+        btns[0].onclick = () => setStatus(student.id, "present", row);
+        btns[1].onclick = () => setStatus(student.id, "absent", row);
+        btns[2].onclick = () => setStatus(student.id, "late", row);
+
+        table.appendChild(row);
+    });
+}
+
+</script>
+
+</body>
+</html>
